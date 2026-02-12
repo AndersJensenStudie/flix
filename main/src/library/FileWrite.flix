@@ -268,4 +268,54 @@ pub mod FileWrite {
     ///
     pub def runWithIO(f: Unit -> a \ ef): Result[IoError, a] \ (ef - FileWrite) + {IO} = handle(f)()
 
+    ///
+    /// Handles the `FileWrite` effect of the given function `f` with the `FileWriteWithResult` effect.
+    ///
+    /// In other words, re-interprets the `FileWrite` effect using the `FileWriteWithResult` effect.
+    ///
+    pub def handleWithFileWriteWithResult(f: a -> b \ ef): a -> Result[IoError, b] \ (ef - FileWrite) + FileWriteWithResult = 
+        x -> run {
+            Ok(f(x))
+        } with handler FileWrite {
+            def write(data, fi, k) = 
+                runAndUnfold(FileWriteWithResult.write(data), fi, k)
+            def writeLines(data, fi, k) = 
+                runAndUnfold(FileWriteWithResult.writeLines(data), fi, k)
+            def writeBytes(data, fi, k) = 
+                runAndUnfold(FileWriteWithResult.writeBytes(data), fi, k)
+            def append(data, fi, k) = 
+                runAndUnfold(FileWriteWithResult.append(data), fi, k)
+            def appendLines(data, fi, k) = 
+                runAndUnfold(FileWriteWithResult.appendLines(data), fi, k)
+            def appendBytes(data, fi, k) = 
+                runAndUnfold(FileWriteWithResult.appendBytes(data), fi, k)
+            def truncate(fi, k) = 
+                runAndUnfold(FileWriteWithResult.truncate, fi, k)
+            def mkDir(d, k) = 
+                runAndUnfold(FileWriteWithResult.mkDir, d, k)
+            def mkDirs(d, k) = 
+                runAndUnfold(FileWriteWithResult.mkDirs, d, k)
+            def mkTempDir(prefix, k) = 
+                let res = FileWriteWithResult.mkTempDir(prefix);
+                match res {
+                    case Ok(ok) => k(ok)
+                    case Err(t) => Err(t)
+                }
+        }
+
+    def runAndUnfold(f: a -> Result[IoError, Unit] \ ef, param: a, k: Unit -> Result[IoError, b] \ ef2): Result[IoError, b] \ ef + ef2 = 
+        let res = f(param);
+        match res {
+            case Ok(ok) => k(ok) 
+            case Err(t) => Err(t)
+        }
+
+    ///
+    /// Handles the `FileWrite` effect of the given function `f` with the `FileWriteWithResult` effect.
+    ///
+    /// In other words, re-interprets the `FileWrite` effect using the `FileWriteWithResult` effect.
+    ///
+    pub def runWithFileWriteWithResult(f: Unit -> b \ ef): Result[IoError, b] \ (ef - FileWrite) + FileWriteWithResult = 
+        handleWithFileWriteWithResult(f)()
+
 }
