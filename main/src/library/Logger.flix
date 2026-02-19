@@ -86,4 +86,25 @@ pub mod Logger {
     @DefaultHandler
     pub def runWithIO(f: Unit -> a \ ef): a \ (ef - Logger) + IO = handle(f)()
 
+    ///
+    /// Handles the `Logger` effect of the given function `f`.
+    ///
+    /// In other words, returns a list of `(Severity, RichString)` that represents the calls to log.
+    ///
+    pub def handleWithList(f: a -> b \ ef): a -> (b, List[(Severity, RichString)]) \ (ef - Logger) =
+        x -> run {
+            (f(x), List.empty())
+        } with handler Logger {
+            def log(s, m, k) = {
+                let (res, lst) = k();
+                (res, List.cons((s,m), lst))
+            }
+        }
+
+    ///
+    /// Runs the `Logger` effect of the given function `f`.
+    ///
+    /// In other words, returns a list of `(Severity, RichString)` that represents the calls to log.
+    ///
+    pub def runWithList(f: Unit -> b \ ef): (b, List[(Severity, RichString)]) \ (ef - Logger) = handleWithList(f)()
 }
