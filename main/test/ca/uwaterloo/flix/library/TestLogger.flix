@@ -1,6 +1,6 @@
-use Assert.{assertEq}
-
 mod TestLogger {
+    use Assert.{assertEq}
+
     @Test
     def testRunWithList01(): Unit \ Assert =
         let (_, list) = run {
