@@ -96,11 +96,11 @@ pub mod Logger {
             f(x)
         } with handler Logger {
             def log(s, m, k) = match s {
-                case Warn => Logger.warn(m); k()
                 case Fatal => Abort.abort(red(m))
-                case Trace => Logger.trace(m); k()
-                case Debug => Logger.debug(m); k()
-                case Info => Logger.info(m); k()
+                case Warn => warn(m); k()
+                case Info => info(m); k()
+                case Trace => trace(m); k()
+                case Debug => debug(m); k()
             }
         }
 
@@ -121,10 +121,10 @@ pub mod Logger {
         } with handler Logger {
             def log(s, m, k) = match s {
                 case Warn => Abort.abort(yellow(m))
-                case Fatal => Logger.fatal(m); k()
-                case Trace => Logger.trace(m); k()
-                case Debug => Logger.debug(m); k()
-                case Info => Logger.info(m); k()
+                case Fatal => fatal(m); k()
+                case Trace => trace(m); k()
+                case Debug => debug(m); k()
+                case Info => info(m); k()
             }
         }
 
