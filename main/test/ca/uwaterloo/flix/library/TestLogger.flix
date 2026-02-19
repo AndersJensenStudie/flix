@@ -23,14 +23,15 @@ mod TestLogger {
         };
         assertEq(expected = expected, turnToString(list))
 
+    // to show that we can have more code executing "normally", that is also returned.
     @Test
     def testRunWithList03(): Unit \ Assert =
         let (stdRes, _list) = run {
             Logger.fatal("A fatal error has occured");
-            5 // to show that we have more code executing "normally"
+            5 
         } with Logger.runWithList;
         assertEq(expected = 5, stdRes)
-
+    
     def turnToString(l: List[(Severity, RichString)]): List[(Severity, String)] = 
         List.map(x -> {let (sev, rs) = x; (sev, RichString.toString(rs))}, l)
 }

@@ -97,7 +97,7 @@ pub mod Logger {
         } with handler Logger {
             def log(s, m, k) = {
                 let (res, lst) = k();
-                (res, List.cons((s,m), lst))
+                (res, List.cons((s, m), lst))
             }
         }
 
