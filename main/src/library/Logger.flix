@@ -29,6 +29,7 @@ pub eff Logger {
 pub mod Logger {
 
     use RichString.{gray, cyan, green, yellow, red, bold, text};
+    use Severity.{Warn, Fatal, Trace, Debug, Info}
 
     ///
     /// Logs the message `m` at the `Trace` level.
@@ -66,11 +67,11 @@ pub mod Logger {
         } with handler Logger {
             def log(s, m, k) = {
                 let prefix = match s {
-                    case Severity.Trace => gray("[Trace]")
-                    case Severity.Debug => cyan("[Debug]")
-                    case Severity.Info  => green("[Info]")
-                    case Severity.Warn  => yellow("[Warn]")
-                    case Severity.Fatal => bold(red("[Fatal]"))
+                    case Trace => gray("[Trace]")
+                    case Debug => cyan("[Debug]")
+                    case Info  => green("[Info]")
+                    case Warn  => yellow("[Warn]")
+                    case Fatal => bold(red("[Fatal]"))
                 };
                 let output = prefix + text(" ") + m;
                 println(RichString.toString(output));
@@ -85,5 +86,53 @@ pub mod Logger {
     ///
     @DefaultHandler
     pub def runWithIO(f: Unit -> a \ ef): a \ (ef - Logger) + IO = handle(f)()
+
+    /// 
+    /// Handles the `Logger` effect of the given function `f`. Uses the `Abort` effect to
+    /// abort if anything is logged with `Fatal` severity. Otherwise, it lets the effect propagate.
+    /// 
+    pub def handleWithAbortOnFatal(f: a -> b \ ef): a -> b \ ef + Abort + Logger = 
+        x -> run {
+            f(x)
+        } with handler Logger {
+            def log(s, m, k) = match s {
+                case Warn => Logger.warn(m); k()
+                case Fatal => Abort.abort(red(m))
+                case Trace => Logger.trace(m); k()
+                case Debug => Logger.debug(m); k()
+                case Info => Logger.info(m); k()
+            }
+        }
+
+    ///
+    /// Runs the `Logger` effect of the given function `f`. Uses the `Abort` effect to
+    /// abort if anything is logged with `Fatal` severity. Otherwise, it lets the effect propagate.
+    /// 
+    pub def runWithAbortOnFatal(f: Unit -> a \ ef): a \ ef + Abort + Logger = 
+        handleWithAbortOnFatal(f)()
+
+    /// 
+    /// Handles the `Logger` effect of the given function `f`. Uses the `Abort` effect to
+    /// abort if anything is logged with `Warn` severity. Otherwise, it lets the effect propagate.
+    /// 
+    pub def handleWithAbortOnWarn(f: a -> b \ ef): a -> b \ ef + Abort + Logger = 
+        x -> run {
+            f(x)
+        } with handler Logger {
+            def log(s, m, k) = match s {
+                case Warn => Abort.abort(yellow(m))
+                case Fatal => Logger.fatal(m); k()
+                case Trace => Logger.trace(m); k()
+                case Debug => Logger.debug(m); k()
+                case Info => Logger.info(m); k()
+            }
+        }
+
+    ///
+    /// Runs the `Logger` effect of the given function `f`. Uses the `Abort` effect to
+    /// abort if anything is logged with `Warn` severity. Otherwise, it lets the effect propagate.
+    /// 
+    pub def runWithAbortOnWarn(f: Unit -> a \ ef): a \ ef + Abort + Logger = 
+        handleWithAbortOnWarn(f)()
 
 }
