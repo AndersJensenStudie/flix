@@ -1001,9 +1001,10 @@ mod Fs.FsLayer {
     ///
     /// Rotates `file` if its size meets or exceeds `maxSize`, then executes `doAction`.
     ///
-    /// Rotation shifts existing numbered files (`file.1` … `file.{maxFiles}`)
-    /// upward by one, deletes the oldest (`file.{maxFiles}`), and moves `file`
-    /// to `file.1`. The `doAction` then writes to the now-absent original path.
+    /// Rotation shifts existing numbered files upward by one, deletes the oldest,
+    /// and moves `file` to the first rotated path. If `file` has an extension,
+    /// the index is inserted before it (e.g. `app.log` -> `app.1.log`).
+    /// The `doAction` then writes to the now-absent original path.
     ///
     /// If the file does not exist (`NotFound`), rotation is skipped and
     /// `doAction` proceeds directly (append will create it).
@@ -1024,8 +1025,9 @@ mod Fs.FsLayer {
                 if (toBytes(sz) < toBytes(maxSize))
                     doAction()
                 else {
+                    let rotated = i -> rotatedPath(file, i);
                     // Delete the oldest rotated file (ignore NotFound)
-                    discard match doDelete("${file}.${maxFiles}") {
+                    discard match doDelete(rotated(maxFiles)) {
                         case Err(IoError(ErrorKind.NotFound, _)) => Ok(())
                         case other                               => other
                     };
@@ -1034,7 +1036,7 @@ mod Fs.FsLayer {
                         if (i < 1)
                             Ok(())
                         else
-                            match doMove("${file}.${i}", "${file}.${i + 1}") {
+                            match doMove(rotated(i), rotated(i + 1)) {
                                 case Ok(_)                               => shift(i - 1)
                                 case Err(IoError(ErrorKind.NotFound, _)) => shift(i - 1)
                                 case Err(e)                              => Err(e)
@@ -1043,8 +1045,8 @@ mod Fs.FsLayer {
                     match shift(maxFiles - 1) {
                         case Err(e) => Err(e)
                         case Ok(_)  =>
-                            // Move the current file to file.1
-                            match doMove(file, "${file}.1") {
+                            // Move the current file to the first rotated path.
+                            match doMove(file, rotated(1)) {
                                 case Err(e) => Err(e)
                                 case Ok(_)  => doAction()
                             }
@@ -1053,6 +1055,42 @@ mod Fs.FsLayer {
         }
 
     // ─── Private helper ────────────────────────────────────────────────
+
+    ///
+    /// Returns the rotated path for `file` and `index`.
+    ///
+    /// If `file` has an extension, the index is inserted before it.
+    /// Otherwise, the index is appended at the end.
+    ///
+    def rotatedPath(file: String, index: Int32): String =
+        let suffix = ".${index}";
+        match splitExtension(file) {
+            case (base, None)      => base + suffix
+            case (base, Some(ext)) => base + suffix + ext
+        }
+
+    ///
+    /// Splits `path` into a base path and optional extension.
+    ///
+    /// The extension is the suffix starting at the last `.` in the final path
+    /// segment (dotfiles like `.env` are treated as having no extension).
+    ///
+    def splitExtension(path: String): (String, Option[String]) =
+        let slashIx = match String.indexOfRight(substr = "/", path) {
+            case Some(i) => i
+            case None    => -1
+        };
+        let backslashIx = match String.indexOfRight(substr = "\\", path) {
+            case Some(i) => i
+            case None    => -1
+        };
+        let sepIx = if (slashIx > backslashIx) slashIx else backslashIx;
+        match String.indexOfRight(substr = ".", path) {
+            case Some(dotIx) if dotIx > sepIx + 1 and dotIx < String.length(path) - 1 =>
+                (String.sliceLeft(end = dotIx, path), Some(String.sliceRight(start = dotIx, path)))
+            case _ =>
+                (path, None)
+        }
 
     ///
     /// Returns the attributes of the given file `f`.

@@ -1181,9 +1181,10 @@ pub mod Fs.FileSystem {
     ///
     /// Before `append`, `appendLines`, and `appendBytes`, the target file's size
     /// is checked. If it meets or exceeds `maxSize`, existing rotated files are
-    /// shifted (`file.1` → `file.2`, etc.), the oldest (`file.{maxFiles}`) is
-    /// deleted, and the current file is moved to `file.1`. The append then
-    /// writes to the now-absent original path.
+    /// shifted upward by one, the oldest is deleted, and the current file is
+    /// moved to the first rotated path. If the file has an extension, the
+    /// rotation index is inserted before it (e.g. `app.log` → `app.1.log`).
+    /// The append then writes to the now-absent original path.
     ///
     /// All other operations are passed through unchanged.
     ///
