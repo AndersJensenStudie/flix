@@ -105,7 +105,7 @@ pub mod Time.Sleep {
             f()
         } with handler Sleep {
             def sleep(d, k) = {
-                Logger.log(Severity.Debug, gray("Sleep: ") + text("${d}"));
+                Logger.log(Logger.Severity.Debug, gray("Sleep: ") + text("${d}"));
                 Sleep.sleep(d);
                 k()
             }
