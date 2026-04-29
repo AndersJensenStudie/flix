@@ -249,6 +249,15 @@ pub mod Vector {
     pub def nonEmpty(v: Vector[a]): Bool = not isEmpty(v)
 
     ///
+    /// Returns a new vector with element `x` added to the front of vector `v`.
+    ///
+    /// Runs in O(n) time.
+    ///
+    pub def cons(x: a, v: Vector[a]): Vector[a] =
+        let f = ix -> if (ix == 0) { x } else { get(ix - 1, v) };
+        init(f, length(v) + 1)
+
+    ///
     /// Returns the number of elements in the vector `v`.
     ///
     pub def length(v: Vector[a]): Int32 = %%VECTOR_LENGTH%%(v)
